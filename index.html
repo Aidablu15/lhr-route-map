@@ -186,74 +186,32 @@
   //    Add/remove as needed. Regions: Europe, Africa, Americas, Asia, Oceania, Middle East, etc.
   // -----------------------------
   const DESTINATIONS = [
-  // -------------------- Europe --------------------
-  { "iata": "ABZ", "name": "Aberdeen International Airport", "coords": [57.201, -2.197], "region": "Europe", "country": "UK" },
-  { "iata": "AMS", "name": "Amsterdam Schiphol Airport", "coords": [52.308, 4.763], "region": "Europe", "country": "Netherlands" },
-  { "iata": "ATH", "name": "Athens International Airport", "coords": [37.936, 23.944], "region": "Europe", "country": "Greece" },
-  { "iata": "BCN", "name": "Barcelona El Prat Airport", "coords": [41.297, 2.078], "region": "Europe", "country": "Spain" },
-  { "iata": "BSL", "name": "EuroAirport Basel-Mulhouse-Freiburg", "coords": [47.598, 7.529], "region": "Europe", "country": "Switzerland/France" },
-  { "iata": "BER", "name": "Berlin Brandenburg Airport", "coords": [52.366, 13.503], "region": "Europe", "country": "Germany" },
-  { "iata": "BLQ", "name": "Guglielmo Marconi Airport", "coords": [44.535, 11.292], "region": "Europe", "country": "Italy" },
-  { "iata": "BUD", "name": "Budapest Ferenc Liszt International Airport", "coords": [47.436, 19.261], "region": "Europe", "country": "Hungary" },
-  { "iata": "BRU", "name": "Brussels Airport", "coords": [50.901, 4.484], "region": "Europe", "country": "Belgium" },
-  { "iata": "CPH", "name": "Copenhagen Airport", "coords": [55.617, 12.649], "region": "Europe", "country": "Denmark" },
-  { "iata": "DUB", "name": "Dublin Airport", "coords": [53.427, -6.243], "region": "Europe", "country": "Ireland" },
-  { "iata": "EDI", "name": "Edinburgh Airport", "coords": [55.95, -3.372], "region": "Europe", "country": "UK" },
-  { "iata": "FRA", "name": "Frankfurt Airport", "coords": [50.037, 8.562], "region": "Europe", "country": "Germany" },
-  { "iata": "GVA", "name": "Geneva Airport", "coords": [46.238, 6.109], "region": "Europe", "country": "Switzerland" },
-  { "iata": "LHR", "name": "London Heathrow Airport", "coords": [51.470, -0.454], "region": "Europe", "country": "UK" },
-  { "iata": "MAN", "name": "Manchester Airport", "coords": [53.365, -2.272], "region": "Europe", "country": "UK" },
-  { "iata": "ORY", "name": "Paris Orly Airport", "coords": [48.723, 2.379], "region": "Europe", "country": "France" },
-  { "iata": "CDG", "name": "Paris Charles de Gaulle Airport", "coords": [49.0097, 2.5479], "region": "Europe", "country": "France" },
-  { "iata": "MXP", "name": "Milan Malpensa Airport", "coords": [45.631, 8.723], "region": "Europe", "country": "Italy" },
-  { "iata": "LIN", "name": "Milan Linate Airport", "coords": [45.445, 9.276], "region": "Europe", "country": "Italy" },
-  { "iata": "MAD", "name": "Madrid Barajas Airport", "coords": [40.472, -3.563], "region": "Europe", "country": "Spain" },
-  { "iata": "ZRH", "name": "Zurich Airport", "coords": [47.458, 8.553], "region": "Europe", "country": "Switzerland" },
+    { name: 'Paris CDG', iata: 'CDG', region: 'Europe',   coords: [49.0097, 2.5479], country: 'France' },
+    { name: 'Amsterdam AMS', iata: 'AMS', region: 'Europe', coords: [52.3086, 4.7639], country: 'Netherlands' },
+    { name: 'Frankfurt FRA', iata: 'FRA', region: 'Europe', coords: [50.0379, 8.5622], country: 'Germany' },
+    { name: 'Madrid MAD', iata: 'MAD', region: 'Europe', coords: [40.4719, -3.5626], country: 'Spain' },
+    { name: 'Istanbul IST', iata: 'IST', region: 'Europe', coords: [41.2753, 28.7519], country: 'Türkiye' },
 
-  // -------------------- Africa --------------------
-  { "iata": "ABV", "name": "Nnamdi Azikiwe International Airport", "coords": [9.006, 7.263], "region": "Africa", "country": "Nigeria" },
-  { "iata": "ACC", "name": "Kotoka International Airport", "coords": [5.605, -0.205], "region": "Africa", "country": "Ghana" },
-  { "iata": "ADD", "name": "Addis Ababa Bole International Airport", "coords": [9.03, 38.8], "region": "Africa", "country": "Ethiopia" },
-  { "iata": "ALG", "name": "Houari Boumediene Airport", "coords": [36.691, 3.215], "region": "Africa", "country": "Algeria" },
-  { "iata": "CPT", "name": "Cape Town International Airport", "coords": [-33.964, 18.601], "region": "Africa", "country": "South Africa" },
-  { "iata": "JNB", "name": "O.R. Tambo International Airport", "coords": [-26.133, 28.242], "region": "Africa", "country": "South Africa" },
-  { "iata": "LOS", "name": "Murtala Muhammed International Airport", "coords": [6.577, 3.321], "region": "Africa", "country": "Nigeria" },
-  { "iata": "NBO", "name": "Jomo Kenyatta International Airport", "coords": [-1.319, 36.927], "region": "Africa", "country": "Kenya" },
-  { "iata": "KGL", "name": "Kigali International Airport", "coords": [-1.968, 30.139], "region": "Africa", "country": "Rwanda" },
+    { name: 'New York JFK', iata: 'JFK', region: 'Americas', coords: [40.6413, -73.7781], country: 'USA' },
+    { name: 'Los Angeles LAX', iata: 'LAX', region: 'Americas', coords: [33.9416, -118.4085], country: 'USA' },
+    { name: 'Toronto YYZ', iata: 'YYZ', region: 'Americas', coords: [43.6777, -79.6248], country: 'Canada' },
+    { name: 'São Paulo GRU', iata: 'GRU', region: 'Americas', coords: [-23.4356, -46.4731], country: 'Brazil' },
 
-  // -------------------- Americas --------------------
-  { "iata": "ATL", "name": "Hartsfield–Jackson Atlanta International Airport", "coords": [33.640, -84.427], "region": "Americas", "country": "USA" },
-  { "iata": "ORD", "name": "O'Hare International Airport", "coords": [41.974, -87.907], "region": "Americas", "country": "USA" },
-  { "iata": "MIA", "name": "Miami International Airport", "coords": [25.793, -80.290], "region": "Americas", "country": "USA" },
-  { "iata": "JFK", "name": "John F. Kennedy International Airport", "coords": [40.641, -73.778], "region": "Americas", "country": "USA" },
-  { "iata": "BOS", "name": "Logan International Airport", "coords": [42.365, -71.009], "region": "Americas", "country": "USA" },
-  { "iata": "CUN", "name": "Cancún International Airport", "coords": [21.036, -86.877], "region": "Americas", "country": "Mexico" },
-  { "iata": "YYC", "name": "Calgary International Airport", "coords": [51.130, -114.019], "region": "Americas", "country": "Canada" },
-  { "iata": "YUL", "name": "Montréal–Trudeau International Airport", "coords": [45.465, -73.747], "region": "Americas", "country": "Canada" },
+    { name: 'Dubai DXB', iata: 'DXB', region: 'Middle East', coords: [25.2532, 55.3657], country: 'UAE' },
+    { name: 'Doha DOH', iata: 'DOH', region: 'Middle East', coords: [25.2731, 51.6081], country: 'Qatar' },
 
-  // -------------------- Asia --------------------
-  { "iata": "AUH", "name": "Abu Dhabi International Airport", "coords": [24.433, 54.651], "region": "Asia", "country": "UAE" },
-  { "iata": "BKK", "name": "Suvarnabhumi Airport", "coords": [13.689, 100.750], "region": "Asia", "country": "Thailand" },
-  { "iata": "HKG", "name": "Hong Kong International Airport", "coords": [22.308, 113.918], "region": "Asia", "country": "Hong Kong" },
-  { "iata": "DXB", "name": "Dubai International Airport", "coords": [25.253, 55.365], "region": "Asia", "country": "UAE" },
-  { "iata": "ICN", "name": "Incheon International Airport", "coords": [37.460, 126.440], "region": "Asia", "country": "South Korea" },
-  { "iata": "NRT", "name": "Narita International Airport", "coords": [35.772, 140.392], "region": "Asia", "country": "Japan" },
+    { name: 'Tokyo Haneda HND', iata: 'HND', region: 'Asia', coords: [35.5494, 139.7798], country: 'Japan' },
+    { name: 'Singapore SIN', iata: 'SIN', region: 'Asia', coords: [1.3644, 103.9915], country: 'Singapore' },
+    { name: 'Delhi DEL', iata: 'DEL', region: 'Asia', coords: [28.5562, 77.1000], country: 'India' },
 
-  // -------------------- Middle East --------------------
-  { "iata": "DOH", "name": "Hamad International Airport", "coords": [25.276, 51.613], "region": "Middle East", "country": "Qatar" },
-  { "iata": "AMM", "name": "Queen Alia International Airport", "coords": [31.722, 35.993], "region": "Middle East", "country": "Jordan" },
-  { "iata": "BAH", "name": "Bahrain International Airport", "coords": [26.270, 50.640], "region": "Middle East", "country": "Bahrain" },
-  { "iata": "JED", "name": "King Abdulaziz International Airport", "coords": [21.683, 39.156], "region": "Middle East", "country": "Saudi Arabia" },
+    { name: 'Johannesburg JNB', iata: 'JNB', region: 'Africa', coords: [-26.1367, 28.2410], country: 'South Africa' },
+    { name: 'Cape Town CPT', iata: 'CPT', region: 'Africa', coords: [-33.9696, 18.5972], country: 'South Africa' },
+    { name: 'Nairobi NBO', iata: 'NBO', region: 'Africa', coords: [-1.3192, 36.9278], country: 'Kenya' },
 
-  // -------------------- Oceania --------------------
-  { "iata": "SYD", "name": "Sydney Kingsford Smith Airport", "coords": [-33.939, 151.175], "region": "Oceania", "country": "Australia" },
-  { "iata": "AKL", "name": "Auckland Airport", "coords": [-37.008, 174.789], "region": "Oceania", "country": "New Zealand" },
+    { name: 'Sydney SYD', iata: 'SYD', region: 'Oceania', coords: [-33.9399, 151.1753], country: 'Australia' },
+    { name: 'Auckland AKL', iata: 'AKL', region: 'Oceania', coords: [-37.0082, 174.7850], country: 'New Zealand' }
+  ];
 
-  // -------------------- Caribbean --------------------
-  { "iata": "BGI", "name": "Grantley Adams International Airport", "coords": [13.074, -59.492], "region": "Caribbean", "country": "Barbados" },
-  { "iata": "BDA", "name": "L.F. Wade International Airport", "coords": [32.364, -64.678], "region": "Caribbean", "country": "Bermuda" },
-  { "iata": "ANU", "name": "V.C. Bird International Airport", "coords": [17.138, -61.792], "region": "Caribbean", "country": "Antigua & Barbuda" }
-];
   // Collect regions dynamically
   const REGIONS = [...new Set(DESTINATIONS.map(d => d.region))].sort();
 
