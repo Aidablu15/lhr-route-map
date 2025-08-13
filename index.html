@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>LHR Route Map (Leaflet)</title>
+
+<!-- Leaflet CSS/JS (CDN) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+  html, body { height: 100%; margin: 0; }
+  #map { height: 100vh; width: 100%; }
+
+  /* Top bar */
+  .topbar {
+    position: absolute; z-index: 9999; left: 12px; right: 12px; top: 12px;
+    padding: 10px 12px; border-radius: 12px;
+    background: rgba(30,30,30,0.85); color: #fff; backdrop-filter: blur(4px);
+    font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+  }
+  .title { font-weight: 700; font-size: 16px; }
+  .subtitle { opacity: 0.9; font-size: 12px; }
+
+  /* Filters / actions */
+  .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .badge { background:#2a2a2a; border:1px solid #3a3a3a; border-radius:999px; padding:6px 10px; }
+  .btn {
+    cursor:pointer; border:none; border-radius:10px; padding:8px 12px;
+    background:#0ea5e9; color:#001018; font-weight:700;
+  }
+  .btn:disabled { opacity: 0.6; cursor: default; }
+  .search {
+    background:#111; border:1px solid #333; border-radius:10px; color:#fff;
+    padding:8px 10px; width: 210px;
+  }
+  .filters {
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center; color:#ddd;
+  }
+  .filters label { display:flex; gap:6px; align-items:center; background:#1a1a1a; border:1px solid #333; padding:6px 8px; border-radius:8px; cursor:pointer; }
+
+  /* Leaflet attribution smaller, unobtrusive */
+  .leaflet-control-attribution { font-size: 11px; }
+
+  /* Popups */
+  .popup h3 { margin:0 0 6px; font-size:16px; }
+  .popup small { color:#666; }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<!-- Top overlay bar -->
+<div class="topbar">
+  <div>
+    <div class="title">London Heathrow Route Map</div>
+    <div class="subtitle">Click a destination to view details. Use filters to show regions.</div>
+  </div>
+  <div class="controls">
+    <input class="search" id="search" placeholder="Search destination (e.g., Tokyo)" />
+    <div class="filters" id="filters">
+      <!-- filters are built by JS -->
+    </div>
+    <button class="btn" id="fitWorld">Fit to World</button>
+  </div>
+</div>
+
+<script>
+  // -----------------------------
+  // 1) Base map
+  // -----------------------------
+  const map = L.map('map', {
+    worldCopyJump: true,
+    preferCanvas: true
+  }).setView([51.4700, -0.4543], 3); // Start zoomed out on LHR
+
+  // Dark tiles similar to Heathrow style
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
+    subdomains: 'abcd',
+    attribution: '&copy; OpenStreetMap, &copy; CARTO'
+  }).addTo(map);
+
+  // -----------------------------
+  // 2) Icons
+  // -----------------------------
+  function airportIcon(color = '#0ea5e9') {
+    // DivIcon with inline SVG pin
+    const svg = encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="26" height="34" viewBox="0 0 26 34">
+        <path d="M13 0C5.82 0 0 5.82 0 13c0 10.5 13 21 13 21s13-10.5 13-21C26 5.82 20.18 0 13 0z" fill="${color}"/>
+        <circle cx="13" cy="13" r="5.5" fill="#0b1220"/>
+      </svg>
+    `);
+    return L.divIcon({
+      className: '',
+      html: `<img alt="airport" src="data:image/svg+xml;utf8,${svg}">`,
+      iconSize: [26, 34],
+      iconAnchor: [13, 34],
+      popupAnchor: [0, -30]
+    });
+  }
+
+  const HUB_ICON = airportIcon('#f97316'); // orange for LHR hub
+  const DEST_ICON = airportIcon('#0ea5e9'); // blue for destinations
+
+  // -----------------------------
+  // 3) Great-circle arc generator
+  //    Returns a list of [lat, lon] along the great circle
+  // -----------------------------
+  function toRad(d) { return d * Math.PI / 180; }
+  function toDeg(r) { return r * 180 / Math.PI; }
+
+  function greatCircle(from, to, numPoints = 128) {
+    const [lat1, lon1] = from.map(toRad);
+    const [lat2, lon2] = to.map(toRad);
+
+    const d = 2 * Math.asin(Math.sqrt(
+      Math.sin((lat2 - lat1) / 2) ** 2 +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin((lon2 - lon1) / 2) ** 2
+    ));
+    if (d === 0) return [from, to];
+
+    const sinD = Math.sin(d);
+    const points = [];
+    for (let i = 0; i <= numPoints; i++) {
+      const f = i / numPoints;
+      const A = Math.sin((1 - f) * d) / sinD;
+      const B = Math.sin(f * d) / sinD;
+
+      const x = A * Math.cos(lat1) * Math.cos(lon1) + B * Math.cos(lat2) * Math.cos(lon2);
+      const y = A * Math.cos(lat1) * Math.sin(lon1) + B * Math.cos(lat2) * Math.sin(lon2);
+      const z = A * Math.sin(lat1) + B * Math.sin(lat2);
+
+      const lat = Math.atan2(z, Math.sqrt(x * x + y * y));
+      const lon = Math.atan2(y, x);
+      points.push([toDeg(lat), toDeg(lon)]);
+    }
+    return points;
+  }
+
+  // -----------------------------
+  // 4) Layers and styling helpers
+  // -----------------------------
+  const allRoutes = L.layerGroup().addTo(map);
+  const allMarkers = L.layerGroup().addTo(map);
+  const regionGroups = {}; // region -> { routes: LayerGroup, markers: LayerGroup }
+
+  function ensureRegion(name) {
+    if (!regionGroups[name]) {
+      regionGroups[name] = { routes: L.layerGroup().addTo(map), markers: L.layerGroup().addTo(map) };
+    }
+    return regionGroups[name];
+  }
+
+  function defaultRouteStyle() {
+    return { color: '#22d3ee', weight: 1.8, opacity: 0.85 };
+  }
+
+  function dimRouteStyle() {
+    return { color: '#94a3b8', weight: 1.2, opacity: 0.35 };
+  }
+
+  function highlightRouteStyle() {
+    return { color: '#f0abfc', weight: 3, opacity: 1 };
+  }
+
+  // -----------------------------
+  // 5) Hub (LHR)
+  // -----------------------------
+  const LHR = {
+    name: 'London Heathrow',
+    iata: 'LHR',
+    coords: [51.4700, -0.4543]
+  };
+  const hubMarker = L.marker(LHR.coords, { icon: HUB_ICON })
+    .addTo(allMarkers)
+    .bindPopup(`<div class="popup"><h3>${LHR.name} (${LHR.iata})</h3><small>Hub</small></div>`);
+
+  // -----------------------------
+  // 6) DESTINATIONS (EDIT HERE)
+  //    Add/remove as needed. Regions: Europe, Africa, Americas, Asia, Oceania, Middle East, etc.
+  // -----------------------------
+  const DESTINATIONS = [
+    { name: 'Paris CDG', iata: 'CDG', region: 'Europe',   coords: [49.0097, 2.5479], country: 'France' },
+    { name: 'Amsterdam AMS', iata: 'AMS', region: 'Europe', coords: [52.3086, 4.7639], country: 'Netherlands' },
+    { name: 'Frankfurt FRA', iata: 'FRA', region: 'Europe', coords: [50.0379, 8.5622], country: 'Germany' },
+    { name: 'Madrid MAD', iata: 'MAD', region: 'Europe', coords: [40.4719, -3.5626], country: 'Spain' },
+    { name: 'Istanbul IST', iata: 'IST', region: 'Europe', coords: [41.2753, 28.7519], country: 'Türkiye' },
+
+    { name: 'New York JFK', iata: 'JFK', region: 'Americas', coords: [40.6413, -73.7781], country: 'USA' },
+    { name: 'Los Angeles LAX', iata: 'LAX', region: 'Americas', coords: [33.9416, -118.4085], country: 'USA' },
+    { name: 'Toronto YYZ', iata: 'YYZ', region: 'Americas', coords: [43.6777, -79.6248], country: 'Canada' },
+    { name: 'São Paulo GRU', iata: 'GRU', region: 'Americas', coords: [-23.4356, -46.4731], country: 'Brazil' },
+
+    { name: 'Dubai DXB', iata: 'DXB', region: 'Middle East', coords: [25.2532, 55.3657], country: 'UAE' },
+    { name: 'Doha DOH', iata: 'DOH', region: 'Middle East', coords: [25.2731, 51.6081], country: 'Qatar' },
+
+    { name: 'Tokyo Haneda HND', iata: 'HND', region: 'Asia', coords: [35.5494, 139.7798], country: 'Japan' },
+    { name: 'Singapore SIN', iata: 'SIN', region: 'Asia', coords: [1.3644, 103.9915], country: 'Singapore' },
+    { name: 'Delhi DEL', iata: 'DEL', region: 'Asia', coords: [28.5562, 77.1000], country: 'India' },
+
+    { name: 'Johannesburg JNB', iata: 'JNB', region: 'Africa', coords: [-26.1367, 28.2410], country: 'South Africa' },
+    { name: 'Cape Town CPT', iata: 'CPT', region: 'Africa', coords: [-33.9696, 18.5972], country: 'South Africa' },
+    { name: 'Nairobi NBO', iata: 'NBO', region: 'Africa', coords: [-1.3192, 36.9278], country: 'Kenya' },
+
+    { name: 'Sydney SYD', iata: 'SYD', region: 'Oceania', coords: [-33.9399, 151.1753], country: 'Australia' },
+    { name: 'Auckland AKL', iata: 'AKL', region: 'Oceania', coords: [-37.0082, 174.7850], country: 'New Zealand' }
+  ];
+
+  // Collect regions dynamically
+  const REGIONS = [...new Set(DESTINATIONS.map(d => d.region))].sort();
+
+  // -----------------------------
+  // 7) Build routes & markers
+  // -----------------------------
+  const routeByIata = new Map();
+  const markerByIata = new Map();
+  const featureBounds = L.latLngBounds([LHR.coords]);
+
+  DESTINATIONS.forEach(dest => {
+    const grp = ensureRegion(dest.region);
+
+    // Marker
+    const marker = L.marker(dest.coords, { icon: DEST_ICON })
+      .bindPopup(`
+        <div class="popup">
+          <h3>${dest.name} (${dest.iata})</h3>
+          <div><small>Region:</small> ${dest.region}</div>
+          <div><small>Country:</small> ${dest.country || '-'}</div>
+          <div style="margin-top:6px;"><small>Route:</small> ${LHR.iata} → ${dest.iata}</div>
+        </div>
+      `);
+    marker.addTo(grp.markers).addTo(allMarkers);
+    markerByIata.set(dest.iata, marker);
+
+    // Route (great-circle)
+    const arc = greatCircle(LHR.coords, dest.coords, 96);
+    const route = L.polyline(arc, defaultRouteStyle())
+      .addTo(grp.routes)
+      .addTo(allRoutes);
+    routeByIata.set(dest.iata, route);
+
+    // Click marker to highlight route
+    marker.on('click', () => {
+      // Dim all, then highlight this one
+      routeByIata.forEach(r => r.setStyle(defaultRouteStyle()));
+      route.setStyle(highlightRouteStyle());
+    });
+
+    featureBounds.extend(dest.coords);
+  });
+
+  // -----------------------------
+  // 8) Fit to all
+  // -----------------------------
+  function fitWorld() {
+    map.fitBounds(featureBounds.pad(0.2), { animate: true, duration: 0.7 });
+  }
+  fitWorld();
+  document.getElementById('fitWorld').onclick = fitWorld;
+
+  // -----------------------------
+  // 9) Filters UI (regions) + search
+  // -----------------------------
+  const filtersEl = document.getElementById('filters');
+  function buildFilters() {
+    // "All" toggle
+    const allId = 'f_all';
+    const allWrap = document.createElement('label');
+    allWrap.innerHTML = `<input type="checkbox" id="${allId}" checked /> All`;
+    filtersEl.appendChild(allWrap);
+
+    // Region checkboxes
+    REGIONS.forEach((r, idx) => {
+      const id = 'f_' + idx;
+      const el = document.createElement('label');
+      el.innerHTML = `<input type="checkbox" id="${id}" data-region="${r}" checked /> ${r}`;
+      filtersEl.appendChild(el);
+    });
+
+    // Behavior
+    function applyFilters() {
+      const allChecked = document.getElementById(allId).checked;
+      const regionChecks = Array.from(filtersEl.querySelectorAll('input[data-region]'));
+      const activeRegions = new Set(
+        regionChecks.filter(c => allChecked || c.checked).map(c => c.dataset.region)
+      );
+
+      // Show/hide per region
+      Object.entries(regionGroups).forEach(([region, groups]) => {
+        const show = activeRegions.has(region);
+        if (show) {
+          groups.routes.addTo(map);
+          groups.markers.addTo(map);
+        } else {
+          groups.routes.removeFrom(map);
+          groups.markers.removeFrom(map);
+        }
+      });
+    }
+    filtersEl.addEventListener('change', e => {
+      if (e.target && e.target.id === allId) {
+        // If "All" toggled, set all others to same
+        const v = e.target.checked;
+        filtersEl.querySelectorAll('input[data-region]').forEach(c => (c.checked = v));
+      } else if (e.target && e.target.hasAttribute('data-region')) {
+        // If any region unchecked, uncheck "All"; if all checked, check "All"
+        const checks = Array.from(filtersEl.querySelectorAll('input[data-region]'));
+        const allOn = checks.every(c => c.checked);
+        document.getElementById(allId).checked = allOn;
+      }
+      applyFilters();
+    });
+
+    applyFilters();
+  }
+  buildFilters();
+
+  // Search (simple name contains)
+  const searchInput = document.getElementById('search');
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim().toLowerCase();
+    routeByIata.forEach((route, iata) => {
+      const dest = DESTINATIONS.find(d => d.iata === iata);
+      const match = !q || (dest.name + ' ' + dest.iata + ' ' + (dest.country||'')).toLowerCase().includes(q);
+      route.setStyle(match ? defaultRouteStyle() : dimRouteStyle());
+      const mk = markerByIata.get(iata);
+      if (mk) {
+        if (match) { mk.addTo(map); } else { mk.removeFrom(map); }
+      }
+    });
+  });
+
+  // Optional: open hub popup initially
+  hubMarker.openPopup();
+</script>
+</body>
+</html>
